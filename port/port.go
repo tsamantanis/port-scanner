@@ -8,7 +8,7 @@ import (
 
 type ScanResult struct {
 	Port  string
-	State string
+	State bool
 }
 
 func ScanPort(protocol, hostname string, port int) ScanResult {
@@ -17,13 +17,13 @@ func ScanPort(protocol, hostname string, port int) ScanResult {
 	conn, err := net.DialTimeout(protocol, address, 60*time.Second)
 
 	if err != nil {
-		result.State = "Closed"
+		result.State = false
 		return result
 	}
 
 	defer conn.Close()
 
-	result.State = "Open"
+	result.State = true
 	return result
 }
 
@@ -38,32 +38,24 @@ func InitialScan(hostname string) []ScanResult {
 	return results
 }
 
-func ScanAllTCP(hostname string, channelTCP chan []ScanResult) {
+func ScanPorts(hostname string, protocol string, channel chan []ScanResult) {
 	var results []ScanResult
 
 	for i := 1; i <= 49152; i++ {
-		results = append(results, ScanPort("tcp", hostname, i))
+		port := ScanPort(protocol, hostname, i)
+		if port.State == true {
+			results = append(results, port)
+		}
 	}
 
-	channelTCP <- results
-}
-
-func ScanAllUDP(hostname string, channelUDP chan []ScanResult) {
-	var results []ScanResult
-
-	for i := 1; i <= 49152; i++ {
-		results = append(results, ScanPort("udp", hostname, i))
-	}
-
-	channelUDP <- results
-
+	channel <- results
 }
 
 func ScanAll(hostname string) []ScanResult {
 	channelTCP := make(chan []ScanResult)
 	channelUDP := make(chan []ScanResult)
-	go ScanAllTCP(hostname, channelTCP)
-	go ScanAllUDP(hostname, channelUDP)
+	go ScanPorts(hostname, "tcp", channelTCP)
+	go ScanPorts(hostname, "udp", channelUDP)
 
 	var result []ScanResult
 	resultTCP := <-channelTCP
