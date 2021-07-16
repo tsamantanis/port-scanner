@@ -13,10 +13,10 @@ func main() {
 	fmt.Printf("%q: %t\n", open.Port, open.State)
 
 	result := port.ScanAll("localhost")
-	print(result)
+	PrintResults(result)
 }
 
-func print(res []port.ScanResult) {
+func PrintResults(res []port.ScanResult) {
 	fmt.Println("List of open ports")
 	for _, value := range res {
 		fmt.Printf("%q: %t\n", value.Port, value.State)
